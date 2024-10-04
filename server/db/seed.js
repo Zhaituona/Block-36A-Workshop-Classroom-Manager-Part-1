@@ -1,42 +1,27 @@
-// Clear and repopulate the database.
-
 const { PrismaClient } = require('@prisma/client');
-const { faker } = require("@faker-js/faker");
+const { faker } = require('@faker-js/faker');
+const bcrypt = require('bcrypt');
 
 const prisma = new PrismaClient();
 
 async function seed() {
-  console.log("Seeding the database.");
+  console.log('Seeding the database.');
   try {
     // Clear the database.
     await prisma.student.deleteMany();
     await prisma.instructor.deleteMany();
 
-    // Recreate the tables
-   // await db.query(`
-   //   CREATE TABLE instructor (
-   //     id SERIAL PRIMARY KEY,
-    //    username TEXT UNIQUE NOT NULL,
-    //    password TEXT NOT NULL
-    //  );
-    //  CREATE TABLE student (
-     //   id SERIAL PRIMARY KEY,
-    //    name TEXT NOT NULL,
-    //    cohort TEXT NOT NULL,
-    //    instructorId INTEGER NOT NULL REFERENCES instructor(id) ON DELETE CASCADE
-    //  );
-  //  `);
-
-    // Add 5 instructors.
+    // Add 5 instructors with hashed passwords.
     const instructors = await Promise.all(
-      [...Array(5)].map(() =>
-        prisma.instructor.create({
+      [...Array(5)].map(async () => {
+        const hashedPassword = await bcrypt.hash(faker.internet.password(), 10);
+        return prisma.instructor.create({
           data: {
             username: faker.internet.userName(),
-            password: faker.internet.password(),
+            password: hashedPassword,
           },
-        })
-      )
+        });
+      })
     );
 
     // Add 4 students for each instructor.
@@ -52,13 +37,12 @@ async function seed() {
       )
     );
 
-    console.log("Database is seeded.");
+    console.log('Database is seeded.');
   } catch (err) {
     console.error(err);
   }
 }
 
-// Seed the database if we are running this file directly.
 if (require.main === module) {
   seed();
 }

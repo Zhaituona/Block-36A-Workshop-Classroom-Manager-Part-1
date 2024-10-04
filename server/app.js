@@ -1,26 +1,27 @@
-const path = require("path");
-const express = require("express");
-const morgan = require("morgan");
+const express = require('express');
+const path = require('path');
+const morgan = require('morgan');
 const app = express();
-const jwt = require("jsonwebtoken");
+const jwt = require('jsonwebtoken');
+require('dotenv').config(); // Ensure this line is present to load environment variables
 
 // Logging middleware
-app.use(morgan("dev"));
+app.use(morgan('dev'));
 
 // Body parsing middleware
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // Static file-serving middleware
-app.use(express.static(path.join(__dirname, "..", "client/dist")));
+app.use(express.static(path.join(__dirname, '..', 'client/dist')));
 
-// Check requests for a token and attach the decoded id to the request
+// Token handling middleware
 app.use((req, res, next) => {
   const auth = req.headers.authorization;
-  const token = auth?.startsWith("Bearer ") ? auth.slice(7) : null;
+  const token = auth?.startsWith('Bearer ') ? auth.slice(7) : null;
 
   try {
-    req.user = jwt.verify(token, process.env.JWT);
+    req.user = jwt.verify(token, process.env.JWT_SECRET);
   } catch {
     req.user = null;
   }
@@ -29,23 +30,23 @@ app.use((req, res, next) => {
 });
 
 // Backend routes
-app.use("/auth", require("./auth"));
-app.use("/api", require("./api"));
+app.use('/auth', require('./auth'));
+app.use('/api', require('./api'));
 
-// Serves the HTML file that Vite builds
-app.get("/", (req, res) => {
-  res.sendFile(path.join(__dirname, "..", "client/dist/index.html"));
+// Serves the HTML file for the frontend
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, '..', 'client/dist/index.html'));
 });
 
 // Error handling middleware
 app.use((err, req, res, next) => {
   console.error(err.stack);
-  res.status(err.status || 500).send(err.message || "Internal server error.");
+  res.status(err.status || 500).send(err.message || 'Internal server error.');
 });
 
-// Default to 404 if no other route matched
+// Default 404 handler
 app.use((req, res) => {
-  res.status(404).send("Not found.");
+  res.status(404).send('Not found.');
 });
 
 module.exports = app;
